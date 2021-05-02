@@ -6,85 +6,98 @@ const DEFAULT_GRAPH: DefaultGraph = new DefaultGraph();
 const DEFAULT_GRAPH_ID: number = 1;
 
 export default class Dataset {
-  readonly size: number = 0;
+  private currentSize: number = 0;
 
-  // The internals are inspired by N3.
-  private termID: number = 1;
+  get size(): number {
+    return this.currentSize;
+  }
 
-  private internalIDsByValues: Map<string, number> = new Map([
+  private lastID: number = 1;
+
+  private ids: Map<string, number> = new Map([
     [DEFAULT_GRAPH.value, DEFAULT_GRAPH_ID],
   ]);
 
-  private valuesByInternalIDs: Map<number, string> = new Map([
+  private values: Map<number, string> = new Map([
     [DEFAULT_GRAPH_ID, DEFAULT_GRAPH.value],
   ]);
 
-  // Redundant, probably reconsider.
-  private termsByInternalIDs: Map<number, Term> = new Map([
-    [DEFAULT_GRAPH_ID, DEFAULT_GRAPH],
-  ]);
+  private graphs: GraphIndex = new Map([[DEFAULT_GRAPH_ID, initGraph()]]);
 
-  private graphs: GraphIndex = new Map([[DEFAULT_GRAPH_ID, new Map()]]);
-
-  private indexTerm(key: string, term: Term): number {
-    const nextID = ++this.termID;
-    this.internalIDsByValues.set(key, nextID);
-    this.valuesByInternalIDs.set(nextID, key);
-    this.termsByInternalIDs.set(nextID, term);
+  private generateTermID(key: string): number {
+    const nextID = ++this.lastID;
+    this.ids.set(key, nextID);
+    this.values.set(nextID, key);
     return nextID;
   }
 
-  private toID(term: Term, options = { shouldIndex: false }): number {
+  private toID(term: Term, canCreate: boolean = false): number {
     const key = toKey(term);
-    if (this.internalIDsByValues.has(key)) {
-      return this.internalIDsByValues.get(key);
-    }
-    if (options.shouldIndex) {
-      return this.indexTerm(key, term);
+    if (this.ids.has(key)) return this.ids.get(key);
+    if (canCreate) {
+      return this.generateTermID(key);
     }
     return -1;
   }
 
+  private quadToIDs(quad: Quad, canCreate: boolean = false): Array<number> {
+    return [
+      this.toID(quad.subject, canCreate),
+      this.toID(quad.predicate, canCreate),
+      this.toID(quad.object, canCreate),
+      this.toID(quad.graph, canCreate),
+    ];
+  }
+
   // private fromID(id: number): Term {
-  //   if (!this.termsByInternalIDs.has(id)) {
+  //   if (!this.terms.has(id)) {
   //     throw new Error(`Unable to find term with internal id ${id}`);
   //   }
-  //   return this.termsByInternalIDs.get(id);
+  //   return this.terms.get(id);
   // }
 
-  add({ subject, predicate, object, graph }: Quad): Dataset {
-    const [s, p, o, g] = [
-      this.toID(subject),
-      this.toID(predicate),
-      this.toID(object),
-      this.toID(graph),
-    ];
-    if (!this.graphs.has(g)) this.graphs.set(g, initGraph());
+  /**
+   * Expects IDs in order subject, predicate, object, graph.
+   * @param   ids number[]
+   * @returns Boolean
+   */
+  private hasQuad(ids: number[]): boolean {
+    if (ids.some((id) => id === -1)) {
+      return false;
+    }
+    const [s, p, o, g] = ids;
+    return !!this.graphs.get(g)?.get('subjects')?.get(s)?.get(p)?.has(o);
+  }
+
+  has(quad: Quad): boolean {
+    const ids = this.quadToIDs(quad);
+    return this.hasQuad(ids);
+  }
+
+  add(quad: Quad): Dataset {
+    if (this.has(quad)) {
+      return this;
+    }
+
+    const [s, p, o, g] = this.quadToIDs(quad, true);
+
+    if (!this.graphs.has(g)) {
+      this.graphs.set(g, initGraph());
+    }
+
     indexQuad(this.graphs.get(g), s, p, o);
+
+    this.currentSize++;
     return this;
   }
 
   delete(quad: Quad): Dataset {
-    // stub
+    const ids = this.quadToIDs(quad, true);
+    if (!this.hasQuad(ids)) {
+      return this;
+    }
+
     return quad ? this : this;
-  }
-
-  has({ subject, predicate, object, graph }: Quad): boolean {
-    const graphKey = this.toID(graph);
-    if (graphKey === -1) return false;
-    const subjectKey = this.toID(subject);
-    if (subjectKey === -1) return false;
-    const predicateKey = this.toID(predicate);
-    if (predicateKey === -1) return false;
-    const objectKey = this.toID(object);
-    if (objectKey === -1) return false;
-
-    return this.graphs
-      .get(graphKey)
-      .get('subjects')
-      .get(subjectKey)
-      .get(predicateKey)
-      .has(objectKey);
   }
 
   match(

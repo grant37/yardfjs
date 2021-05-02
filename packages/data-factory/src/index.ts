@@ -1,6 +1,4 @@
-import DataFactory from './DataFactory';
-
-export default DataFactory;
+export { default } from './DataFactory';
 export * from './DataFactory';
 
 export { default as Term } from './Term';

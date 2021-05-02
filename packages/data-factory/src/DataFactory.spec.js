@@ -1,10 +1,6 @@
-const DataFactory = require('../');
+const DataFactory = require('./DataFactory').default;
 
 describe('DataFactory', () => {
-  it('should exist', () => {
-    expect(DataFactory).toBeTruthy();
-  });
-
   it('should create named nodes', () => {
     const node = DataFactory.namedNode('hello');
     expect(node.value).toBe('hello');

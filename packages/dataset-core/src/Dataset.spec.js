@@ -1,7 +1,16 @@
-const Dataset = require('./Dataset');
+const Dataset = require('.').default;
+const { quad, namedNode } = require('@yardfjs/data-factory');
 
-describe('rando testing', () => {
-  it('should do rando testing', () => {
-    expect('rando').toBe('rando');
+describe('Dataset', () => {
+  it('should exist as the default export', () => {
+    expect(Dataset).toBeTruthy();
+  });
+
+  it('should add quads', () => {
+    const ds = new Dataset();
+    const q = quad(namedNode('s'), namedNode('p'), namedNode('o'));
+    ds.add(q);
+    expect(ds.size).toBe(1);
+    expect(ds.has(q)).toBe(true);
   });
 });
