@@ -1,8 +1,13 @@
-import { DefaultGraphTermType } from './types';
 import Term from './Term';
 
 export default class DefaultGraph extends Term {
-  readonly termType: DefaultGraphTermType = 'DefaultGraph';
+  static get termType(): DefaultGraphTermType {
+    return 'DefaultGraph';
+  }
+
+  get termType(): DefaultGraphTermType {
+    return DefaultGraph.termType;
+  }
 
   constructor() {
     super('');

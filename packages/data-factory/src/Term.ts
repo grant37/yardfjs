@@ -1,9 +1,7 @@
-import { TermType } from './types';
-
 export default abstract class Term {
-  readonly termType: TermType;
-
   constructor(readonly value: string) {}
+
+  abstract termType: TermType;
 
   equals(other?: Term): boolean {
     return (

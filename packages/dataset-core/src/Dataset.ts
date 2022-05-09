@@ -1,6 +1,5 @@
 import { DefaultGraph, Quad, Term } from '@yardfjs/data-factory';
-import { indexQuad, initGraph, toKey } from './util';
-import { GraphIndex } from './types';
+import { indexQuad, initGraph, toKey } from './utils';
 
 const DEFAULT_GRAPH: DefaultGraph = new DefaultGraph();
 const DEFAULT_GRAPH_ID: number = 1;
@@ -61,11 +60,13 @@ export default class Dataset {
    * @param   ids number[]
    * @returns Boolean
    */
-  private hasQuad(ids: number[]): boolean {
-    if (ids.some((id) => id === -1)) {
+  private hasQuad(termIds: number[]): boolean {
+    if (termIds.some((id) => id === -1)) {
       return false;
     }
-    const [s, p, o, g] = ids;
+
+    const [s, p, o, g] = termIds;
+
     return !!this.graphs.get(g)?.get('subjects')?.get(s)?.get(p)?.has(o);
   }
 

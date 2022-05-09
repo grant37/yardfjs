@@ -3,33 +3,34 @@ import BlankNode from './BlankNode';
 import DefaultGraph from './DefaultGraph';
 import Literal from './Literal';
 import NamedNode from './NamedNode';
-import Term from './Term';
 import Variable from './Variable';
 
-let blankNodeID: number = 0;
+type Term = NamedNode | BlankNode | Literal | Variable | Quad | DefaultGraph;
 
 export default class DataFactory {
-  static namedNode(value: string): NamedNode {
+  private blankNodeID: number = 0;
+
+  namedNode(value: string): NamedNode {
     return new NamedNode(value);
   }
 
-  static blankNode(value?: string): BlankNode {
-    return new BlankNode(value || `b${(++blankNodeID).toString()}`);
+  blankNode(value?: string): BlankNode {
+    return new BlankNode(value || `b${(++this.blankNodeID).toString()}`);
   }
 
-  static literal(value?: string, languageOrDatatype?: string | NamedNode) {
+  literal(value?: string, languageOrDatatype?: string | NamedNode) {
     return new Literal(value, languageOrDatatype);
   }
 
-  static variable(value: string): Variable {
+  variable(value: string): Variable {
     return new Variable(value);
   }
 
-  static defaultGraph(): DefaultGraph {
+  defaultGraph(): DefaultGraph {
     return new DefaultGraph();
   }
 
-  static quad(
+  quad(
     subject: Subject,
     predicate: Predicate,
     object: Object,
@@ -38,25 +39,23 @@ export default class DataFactory {
     return new Quad(subject, predicate, object, graph || new DefaultGraph());
   }
 
-  static fromTerm(
-    original: NamedNode | BlankNode | Variable | DefaultGraph | Literal | Quad
-  ): Term {
+  fromTerm(original: Term): Term {
     switch (original.termType) {
       case 'NamedNode':
-        return DataFactory.namedNode(original.value);
+        return this.namedNode(original.value);
       case 'BlankNode':
-        return DataFactory.blankNode(original.value);
+        return this.blankNode(original.value);
       case 'Variable':
-        return DataFactory.variable(original.value);
+        return this.variable(original.value);
       case 'DefaultGraph':
-        return DataFactory.defaultGraph();
+        return this.defaultGraph();
       case 'Literal':
-        return DataFactory.literal(
+        return this.literal(
           original.value,
           original.language || original.dataType
         );
       case 'Quad':
-        return DataFactory.fromQuad(original);
+        return this.fromQuad(original);
       default:
         throw new TypeError(
           'Unknown term type provided to DataFactory::fromTerm'
@@ -64,8 +63,8 @@ export default class DataFactory {
     }
   }
 
-  static fromQuad(original: Quad): Quad {
-    return DataFactory.quad(
+  fromQuad(original: Quad): Quad {
+    return this.quad(
       original.subject,
       original.predicate,
       original.object,
@@ -73,14 +72,3 @@ export default class DataFactory {
     );
   }
 }
-
-export const {
-  namedNode,
-  blankNode,
-  literal,
-  variable,
-  defaultGraph,
-  quad,
-  fromTerm,
-  fromQuad,
-} = DataFactory;

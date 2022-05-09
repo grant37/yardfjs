@@ -1,18 +1,6 @@
 import { FirstIndex, Graph } from '../types';
 import { Literal, Term } from '@yardfjs/data-factory';
 
-// For indexing purposes, not canonical.
-export const toKey = (term: Term): string => {
-  switch (true) {
-    case term.termType === 'Literal':
-      return `${term.value}${
-        (term as Literal).language || (term as Literal).dataType.value
-      }`;
-    default:
-      return term.value;
-  }
-};
-
 export const initGraph = (): Graph =>
   new Map([
     ['subjects', new Map()],

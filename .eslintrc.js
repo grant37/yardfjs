@@ -11,9 +11,10 @@ module.exports = {
         ignoreDeclarationSort: false,
         ignoreMemberSort: false,
         memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
-        allowSeparatedGroups: false
-      }
+        allowSeparatedGroups: false,
+      },
     ],
-    quotes: ['error', 'single']
-  }
+    quotes: ['error', 'single'],
+    'class-methods-use-this': 'off',
+  },
 };

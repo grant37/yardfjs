@@ -2,7 +2,6 @@ import BlankNode from './BlankNode';
 import DefaultGraph from './DefaultGraph';
 import Literal from './Literal';
 import NamedNode from './NamedNode';
-import { QuadTermType } from './types';
 import Term from './Term';
 import Variable from './Variable';
 
@@ -12,7 +11,9 @@ export type Object = Term & (NamedNode | BlankNode | Variable | Literal);
 export type Graph = Term & (NamedNode | BlankNode | Variable | DefaultGraph);
 
 export default class Quad extends Term {
-  readonly termType: QuadTermType = 'Quad';
+  get termType(): QuadTermType {
+    return 'Quad';
+  }
 
   constructor(
     readonly subject: Subject,
