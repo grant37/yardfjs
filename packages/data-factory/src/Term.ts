@@ -1,7 +1,7 @@
 export default abstract class Term {
   constructor(readonly value: string) {}
 
-  abstract termType: TermType;
+  abstract termType: string;
 
   equals(other?: Term): boolean {
     return (

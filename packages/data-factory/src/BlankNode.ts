@@ -1,7 +1,7 @@
 import Term from './Term';
 
 export default class BlankNode extends Term {
-  get termType(): BlankNodeTermType {
+  get termType(): string {
     return 'BlankNode';
   }
 

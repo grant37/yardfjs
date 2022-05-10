@@ -1,7 +1,7 @@
 import Term from './Term';
 
 export default class NamedNode extends Term {
-  get termType(): NamedNodeTermType {
+  get termType(): string {
     return 'NamedNode';
   }
 

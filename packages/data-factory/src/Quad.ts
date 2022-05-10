@@ -11,7 +11,7 @@ export type Object = Term & (NamedNode | BlankNode | Variable | Literal);
 export type Graph = Term & (NamedNode | BlankNode | Variable | DefaultGraph);
 
 export default class Quad extends Term {
-  get termType(): QuadTermType {
+  get termType(): string {
     return 'Quad';
   }
 

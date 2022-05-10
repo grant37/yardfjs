@@ -2,7 +2,7 @@ import NamedNode from './NamedNode';
 import Term from './Term';
 
 export default class Literal extends Term {
-  get termType(): LiteralTermType {
+  get termType(): string {
     return 'Literal';
   }
 

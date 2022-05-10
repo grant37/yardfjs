@@ -52,10 +52,10 @@ export default class DataFactory {
       case 'Literal':
         return this.literal(
           original.value,
-          original.language || original.dataType
+          (original as Literal).language || (original as Literal).dataType
         );
       case 'Quad':
-        return this.fromQuad(original);
+        return this.fromQuad(original as Quad);
       default:
         throw new TypeError(
           'Unknown term type provided to DataFactory::fromTerm'

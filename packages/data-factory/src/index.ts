@@ -8,5 +8,3 @@ export { default as Variable } from './Variable';
 export { default as Literal } from './Literal';
 export { default as DefaultGraph } from './DefaultGraph';
 export { default as Quad } from './Quad';
-
-export * from './types';

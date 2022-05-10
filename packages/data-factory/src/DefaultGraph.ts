@@ -1,11 +1,11 @@
 import Term from './Term';
 
 export default class DefaultGraph extends Term {
-  static get termType(): DefaultGraphTermType {
+  static get termType(): string {
     return 'DefaultGraph';
   }
 
-  get termType(): DefaultGraphTermType {
+  get termType(): string {
     return DefaultGraph.termType;
   }
 
