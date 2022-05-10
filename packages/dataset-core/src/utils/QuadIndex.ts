@@ -8,11 +8,6 @@ type SecondPartIndex = Map<number, Set<number>>;
 type Graph = Map<PartKey, PartIndex>;
 type GraphIndex = Map<number, Graph>;
 
-// eslint-disable-next-line prefer-destructuring
-const forEach = Array.prototype.forEach;
-// eslint-disable-next-line prefer-destructuring
-const reduce = Array.prototype.reduce;
-
 /**
  * Internal representation of quads. Various indices are of the following form:
  * g -> subjects -> s -> p -> o
@@ -41,8 +36,7 @@ export default class QuadIndex {
   }
 
   get size() {
-    return reduce.call(
-      this.graphs.values(),
+    return Array.from(this.graphs.values()).reduce(
       (acc: number, graph: Graph) => {
         const predicates = graph.get('subjects').values();
         const objects: Set<number>[] = Array.prototype.map.call(
@@ -118,7 +112,7 @@ export default class QuadIndex {
     const pId = predicate && this.terms.getTermId(predicate);
     const oId = object && this.terms.getTermId(object);
 
-    const graphs = this.isValidId(gId) ? [gId] : this.graphs.keys();
+    const graphs = this.isValidId(gId) ? new Map([[gId, gId]]) : this.graphs;
 
     const matchSubject = this.isValidId(sId);
     const matchPredicate = this.isValidId(pId);
@@ -126,7 +120,7 @@ export default class QuadIndex {
 
     let terms: number[][];
 
-    forEach.call(graphs, (currGraphId: number) => {
+    graphs.forEach((_: Graph | number, currGraphId: number) => {
       switch (true) {
         case matchSubject && !matchPredicate && !matchObject:
           terms = this.dynamicMatch(sId, currGraphId, 'subjects');
@@ -252,9 +246,11 @@ export default class QuadIndex {
       return result;
     }
 
-    forEach.call(target, (secondIndex: SecondPartIndex) => {
-      this.gatherTerms(result, id1, graphId, partKey, secondIndex);
-    });
+    target.forEach(
+      (_: Set<number>, __: number, secondIndex: SecondPartIndex) => {
+        this.gatherTerms(result, id1, graphId, partKey, secondIndex);
+      }
+    );
 
     return result;
   }
