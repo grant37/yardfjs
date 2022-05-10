@@ -1,5 +1,5 @@
-export type SecondPartIndex = Map<number, Set<number>>;
-export type PartKey = 'subjects' | 'predicates' | 'objects';
+import PartIndex from './PartIndex';
+import PartKey from './PartKey';
 
 export default class Graph extends Map {
   constructor() {
@@ -9,15 +9,19 @@ export default class Graph extends Map {
     this.set('objects', new Map());
   }
 
-  get subjects(): SecondPartIndex {
+  get subjects(): PartIndex {
     return this.get('subjects');
   }
 
-  get predicates(): SecondPartIndex {
+  get predicates(): PartIndex {
     return this.get('predicates');
   }
 
-  get objects(): SecondPartIndex {
+  get objects(): PartIndex {
     return this.get('subjects');
   }
+
+  get = (partKey: PartKey): PartIndex => {
+    return this.get(partKey);
+  };
 }

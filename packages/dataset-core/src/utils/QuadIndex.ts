@@ -1,13 +1,12 @@
 import { Quad, Term } from '@yardfjs/data-factory';
+
 import Graph from './Graph';
 import GraphIndex from './GraphIndex';
-
+import PartIndex from './PartIndex';
+import PartKey from './PartKey';
+import SecondPartIndex from './SecondPartIndex';
 import TermIndex from './TermIndex';
-
-type PartKey = 'subjects' | 'predicates' | 'objects';
-type PartIndex = Map<number, SecondPartIndex>;
-type SecondPartIndex = Map<number, ThirdPartIndex>;
-type ThirdPartIndex = Set<number>;
+import ThirdPartIndex from './ThirdPartIndex';
 
 /**
  * Internal representation of quads. Various indices are of the following form:
