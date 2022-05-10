@@ -1,4 +1,5 @@
 export type SecondPartIndex = Map<number, Set<number>>;
+export type PartKey = 'subjects' | 'predicates' | 'objects';
 
 export default class Graph extends Map {
   constructor() {

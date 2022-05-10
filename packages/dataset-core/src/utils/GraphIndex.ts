@@ -1,3 +1,5 @@
 import Graph from './Graph';
 
-export default GraphIndex = Map<number, Graph>;
+type GraphIndex = Map<number, Graph>;
+
+export default GraphIndex;
