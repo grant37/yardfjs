@@ -1,12 +1,13 @@
 import { Quad, Term } from '@yardfjs/data-factory';
+import Graph from './Graph';
+import GraphIndex from './GraphIndex';
 
 import TermIndex from './TermIndex';
 
 type PartKey = 'subjects' | 'predicates' | 'objects';
 type PartIndex = Map<number, SecondPartIndex>;
-type SecondPartIndex = Map<number, Set<number>>;
-type Graph = Map<PartKey, PartIndex>;
-type GraphIndex = Map<number, Graph>;
+type SecondPartIndex = Map<number, ThirdPartIndex>;
+type ThirdPartIndex = Set<number>;
 
 /**
  * Internal representation of quads. Various indices are of the following form:
@@ -19,12 +20,7 @@ export default class QuadIndex {
 
   private graphs: GraphIndex;
 
-  private static createGraph = (): Graph =>
-    new Map([
-      ['subjects', new Map()],
-      ['predicates', new Map()],
-      ['objects', new Map()],
-    ]);
+  private static createGraph = (): Graph => new Graph();
 
   constructor(terms?: TermIndex, graphs?: GraphIndex) {
     if ((terms && !graphs) || (!terms && graphs)) {
@@ -38,15 +34,18 @@ export default class QuadIndex {
   get size() {
     return Array.from(this.graphs.values()).reduce(
       (acc: number, graph: Graph) => {
-        const predicates = graph.get('subjects').values();
-        const objects: Set<number>[] = Array.prototype.map.call(
+        const predicates = graph.subjects.values();
+        const objects: ThirdPartIndex[] = Array.prototype.map.call(
           predicates,
           (index: SecondPartIndex) => index.values()
         );
 
         return (
           acc +
-          objects.reduce((curr: number, set: Set<number>) => curr + set.size, 0)
+          objects.reduce(
+            (curr: number, set: ThirdPartIndex) => curr + set.size,
+            0
+          )
         );
       },
       0
@@ -94,8 +93,7 @@ export default class QuadIndex {
     return (
       this.graphs
         .get(graphId)
-        ?.get('subjects')
-        ?.get(subjectId)
+        ?.subjects?.get(subjectId)
         ?.get(predicateId)
         ?.has(objectId) || false
     );
@@ -247,7 +245,7 @@ export default class QuadIndex {
     }
 
     target.forEach(
-      (_: Set<number>, __: number, secondIndex: SecondPartIndex) => {
+      (_: ThirdPartIndex, __: number, secondIndex: SecondPartIndex) => {
         this.gatherTerms(result, id1, graphId, partKey, secondIndex);
       }
     );
@@ -262,15 +260,12 @@ export default class QuadIndex {
     partKey: PartKey,
     target: SecondPartIndex
   ) {
-    forEach.call(
-      target.entries(),
-      ([id2, thirdIndex]: [number, Set<number>]) => {
-        forEach.call(thirdIndex.values(), (id3: number) => {
-          const term = this.buildTermIdArray(partKey, id1, id2, id3, graphId);
-          acc.push(term);
-        });
-      }
-    );
+    target.forEach((thirdIndex: ThirdPartIndex, id2: number) => {
+      thirdIndex.forEach((id3: number) => {
+        const term = this.buildTermIdArray(partKey, id1, id2, id3, graphId);
+        acc.push(term);
+      });
+    });
   }
 
   private buildTermIdArray(
@@ -298,21 +293,13 @@ export default class QuadIndex {
   *[Symbol.iterator](): Iterator<Quad> {
     const acc: number[][] = [];
 
-    forEach.call(this.graphs.entries(), ([gId, graph]: [number, Graph]) => {
-      forEach.call(graph.get('subjects'), (subjects: PartIndex) => {
-        forEach.call(
-          subjects.entries(),
-          ([sId, predicates]: [number, SecondPartIndex]) => {
-            forEach.call(
-              predicates.entries(),
-              ([pId, objects]: [number, Set<number>]) => {
-                forEach.call(objects.values(), (oId: number) => {
-                  acc.push([sId, pId, oId, gId]);
-                });
-              }
-            );
-          }
-        );
+    this.graphs.forEach((graph: Graph, gId: number) => {
+      graph.subjects.forEach((predicates: SecondPartIndex, sId: number) => {
+        predicates.forEach((objects: ThirdPartIndex, pId: number) => {
+          objects.forEach((oId: number) => {
+            acc.push([sId, pId, oId, gId]);
+          });
+        });
       });
     });
 
