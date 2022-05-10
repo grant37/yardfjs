@@ -172,7 +172,7 @@ export default class QuadIndex {
     ...parts: number[]
   ): void => {
     const graph = this.graphs.get(graphId) || QuadIndex.createGraph();
-    const partIndex = graph.get(partKey);
+    const partIndex = graph[partKey];
 
     const [firstID, id2, thirdID] = parts;
     switch (true) {
@@ -193,7 +193,7 @@ export default class QuadIndex {
     primaryId: number
   ): void => {
     const graph = this.graphs.get(graphId) || QuadIndex.createGraph();
-    const partIndex = graph.get(partKey);
+    const partIndex = graph[partKey];
 
     partIndex.delete(primaryId);
 
@@ -214,9 +214,7 @@ export default class QuadIndex {
   ): number[][] {
     const termsToMatch = arguments.length - 2;
 
-    let target: PartIndex | SecondPartIndex = this.graphs
-      .get(graphId)
-      .get(partKey);
+    let target: PartIndex | SecondPartIndex = this.graphs.get(graphId)[partKey];
 
     if (!target.has(id1)) {
       return [];

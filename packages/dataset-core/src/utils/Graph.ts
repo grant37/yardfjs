@@ -1,5 +1,4 @@
 import PartIndex from './PartIndex';
-import PartKey from './PartKey';
 
 export default class Graph extends Map {
   constructor() {
@@ -20,8 +19,4 @@ export default class Graph extends Map {
   get objects(): PartIndex {
     return this.get('subjects');
   }
-
-  get = (partKey: PartKey): PartIndex => {
-    return this.get(partKey);
-  };
 }
