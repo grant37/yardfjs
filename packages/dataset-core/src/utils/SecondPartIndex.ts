@@ -1,3 +1,3 @@
-type SecondPartIndex = Map<number, Set<number>>;
+import ThirdPartIndex from './ThirdPartIndex';
 
-export default SecondPartIndex;
+export default class SecondPartIndex extends Map<number, ThirdPartIndex> {}

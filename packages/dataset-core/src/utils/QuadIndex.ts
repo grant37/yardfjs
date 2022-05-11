@@ -2,7 +2,6 @@ import { Quad, Term } from '@yardfjs/data-factory';
 
 import Graph from './Graph';
 import GraphIndex from './GraphIndex';
-import PartIndex from './PartIndex';
 import PartKey from './PartKey';
 import SecondPartIndex from './SecondPartIndex';
 import TermIndex from './TermIndex';
@@ -15,11 +14,11 @@ import ThirdPartIndex from './ThirdPartIndex';
  * g -> objects -> o -> s -> p
  */
 export default class QuadIndex {
+  private cachedSize?: number = null;
+
   private terms: TermIndex;
 
   private graphs: GraphIndex;
-
-  private static createGraph = (): Graph => new Graph();
 
   constructor(terms?: TermIndex, graphs?: GraphIndex) {
     if ((terms && !graphs) || (!terms && graphs)) {
@@ -27,28 +26,27 @@ export default class QuadIndex {
     }
 
     this.terms = terms || new TermIndex();
-    this.graphs = graphs || new Map();
+    this.graphs = graphs || new GraphIndex();
   }
 
   get size() {
-    return Array.from(this.graphs.values()).reduce(
-      (acc: number, graph: Graph) => {
-        const predicates = graph.subjects.values();
-        const objects: ThirdPartIndex[] = Array.prototype.map.call(
-          predicates,
-          (index: SecondPartIndex) => index.values()
-        );
+    if (this.cachedSize !== null) {
+      return this.cachedSize;
+    }
 
-        return (
-          acc +
-          objects.reduce(
-            (curr: number, set: ThirdPartIndex) => curr + set.size,
-            0
-          )
-        );
-      },
-      0
-    );
+    let cachedSize = 0;
+
+    this.graphs.forEach((graph: Graph) => {
+      graph.subjects.forEach((predicates: SecondPartIndex) => {
+        predicates.forEach((objects: ThirdPartIndex) => {
+          cachedSize += objects.size;
+        });
+      });
+    });
+
+    this.cachedSize = cachedSize;
+
+    return cachedSize;
   }
 
   add({ subject, predicate, object, graph }: Quad): void {
@@ -57,9 +55,9 @@ export default class QuadIndex {
     const predicateId = this.terms.addTerm(predicate);
     const objectId = this.terms.addTerm(object);
 
-    this.indexParts(graphId, 'subjects', subjectId, predicateId, objectId);
-    this.indexParts(graphId, 'predicates', predicateId, objectId, subjectId);
-    this.indexParts(graphId, 'objects', objectId, subjectId, predicateId);
+    this.graphs.addTerm(subjectId, predicateId, objectId, graphId);
+
+    this.cachedSize = null;
   }
 
   delete(quad: Quad): void {
@@ -81,6 +79,8 @@ export default class QuadIndex {
     this.terms.deleteTerm(subject);
     this.terms.deleteTerm(predicate);
     this.terms.deleteTerm(object);
+
+    this.cachedSize = null;
   }
 
   has({ subject, predicate, object, graph }: Quad): boolean {
@@ -109,7 +109,11 @@ export default class QuadIndex {
     const pId = predicate && this.terms.getTermId(predicate);
     const oId = object && this.terms.getTermId(object);
 
-    const graphs = this.isValidId(gId) ? new Map([[gId, gId]]) : this.graphs;
+    if (this.isValidId(gId) && !this.graphs.has(gId)) {
+      return new QuadIndex();
+    }
+
+    const graphs = this.isValidId(gId) ? [this.graphs.get(gId)] : this.graphs;
 
     const matchSubject = this.isValidId(sId);
     const matchPredicate = this.isValidId(pId);
@@ -117,28 +121,28 @@ export default class QuadIndex {
 
     let terms: number[][];
 
-    graphs.forEach((_: Graph | number, currGraphId: number) => {
+    graphs.forEach((curr: Graph) => {
       switch (true) {
         case matchSubject && !matchPredicate && !matchObject:
-          terms = this.dynamicMatch(sId, currGraphId, 'subjects');
+          terms = curr.subjects.match(sId);
           break;
         case matchSubject && matchPredicate && !matchObject:
-          terms = this.dynamicMatch(sId, currGraphId, 'subjects', pId);
+          terms = curr.subjects.match(sId, pId);
           break;
         case matchSubject && matchPredicate && matchObject:
-          terms = this.dynamicMatch(sId, currGraphId, 'subjects', pId, oId);
+          terms = curr.subjects.match(sId, pId, oId);
           break;
         case matchPredicate && !matchSubject && !matchObject:
-          terms = this.dynamicMatch(pId, currGraphId, 'predicates');
+          terms = curr.predicates.match(pId);
           break;
         case matchPredicate && matchObject && !matchSubject:
-          terms = this.dynamicMatch(pId, currGraphId, 'predicates', oId);
+          terms = curr.predicates.match(pId, oId);
           break;
         case matchObject && !matchSubject && !matchPredicate:
-          terms = this.dynamicMatch(oId, currGraphId, 'objects');
+          terms = curr.objects.match(oId);
           break;
         case matchObject && matchSubject && !matchPredicate:
-          terms = this.dynamicMatch(oId, currGraphId, 'objects', sId);
+          terms = curr.objects.match(oId, sId);
           break;
         case !matchSubject && !matchPredicate && !matchObject:
           terms = [];
@@ -152,12 +156,10 @@ export default class QuadIndex {
       Array.from(new Set(terms.reduce((acc, curr) => acc.concat(curr), [])))
     );
 
-    const graphIndex = terms.reduce((acc, [s, p, o, g]) => {
-      this.indexParts.call(acc, g, 'subjects', s, p, o);
-      this.indexParts.call(acc, g, 'predicates', p, o, s);
-      this.indexParts.call(acc, g, 'objects', o, s, p);
-      return acc;
-    }, new Map());
+    const graphIndex = new GraphIndex();
+    terms.forEach(([graphId, subjectId, predicateId, objectId]) => {
+      graphIndex.addTerm(graphId, subjectId, predicateId, objectId);
+    });
 
     return new QuadIndex(termIndex, graphIndex);
   }
@@ -166,33 +168,17 @@ export default class QuadIndex {
     return typeof id === 'number';
   }
 
-  private indexParts = (
-    graphId: number,
-    partKey: PartKey,
-    ...parts: number[]
-  ): void => {
-    const graph = this.graphs.get(graphId) || QuadIndex.createGraph();
-    const partIndex = graph[partKey];
-
-    const [firstID, id2, thirdID] = parts;
-    switch (true) {
-      case !partIndex.has(firstID):
-        partIndex.set(firstID, new Map([[id2, new Set([thirdID])]]));
-        break;
-      case !partIndex.get(firstID).has(id2):
-        partIndex.get(firstID).set(id2, new Set([thirdID]));
-        break;
-      default:
-        partIndex.get(firstID).get(id2).add(thirdID);
-    }
-  };
-
   private removeParts = (
     graphId: number,
     partKey: PartKey,
     primaryId: number
   ): void => {
-    const graph = this.graphs.get(graphId) || QuadIndex.createGraph();
+    const graph = this.graphs.get(graphId);
+
+    if (!graph) {
+      return;
+    }
+
     const partIndex = graph[partKey];
 
     partIndex.delete(primaryId);
@@ -201,91 +187,6 @@ export default class QuadIndex {
       this.graphs.delete(graphId);
     }
   };
-
-  /**
-   * Return an array of quads as ids where target part id matches for a given graph.
-   */
-  private dynamicMatch(
-    id1: number,
-    graphId: number,
-    partKey: PartKey,
-    id2?: number,
-    id3?: number
-  ): number[][] {
-    const termsToMatch = arguments.length - 2;
-
-    let target: PartIndex | SecondPartIndex = this.graphs.get(graphId)[partKey];
-
-    if (!target.has(id1)) {
-      return [];
-    }
-
-    target = target.get(id1);
-
-    if (this.isValidId(id2) && !target.has(id2)) {
-      return [];
-    }
-
-    if (this.isValidId(id3) && !target.get(id2).has(id3)) {
-      return [];
-    }
-
-    if (termsToMatch === 3) {
-      return [this.buildTermIdArray(partKey, id1, id2, id3, graphId)];
-    }
-
-    const result = [];
-
-    if (termsToMatch === 2) {
-      this.gatherTerms(result, id1, graphId, partKey, target);
-      return result;
-    }
-
-    target.forEach(
-      (_: ThirdPartIndex, __: number, secondIndex: SecondPartIndex) => {
-        this.gatherTerms(result, id1, graphId, partKey, secondIndex);
-      }
-    );
-
-    return result;
-  }
-
-  private gatherTerms(
-    acc: number[][],
-    id1: number,
-    graphId: number,
-    partKey: PartKey,
-    target: SecondPartIndex
-  ) {
-    target.forEach((thirdIndex: ThirdPartIndex, id2: number) => {
-      thirdIndex.forEach((id3: number) => {
-        const term = this.buildTermIdArray(partKey, id1, id2, id3, graphId);
-        acc.push(term);
-      });
-    });
-  }
-
-  private buildTermIdArray(
-    partKey: PartKey,
-    id1: number,
-    id2: number,
-    id3: number,
-    graphId: number
-  ): number[] {
-    switch (partKey) {
-      case 'subjects':
-        // s -> p -> o
-        return [id1, id2, id3, graphId];
-      case 'predicates':
-        // p -> o -> s
-        return [id3, id1, id2, graphId];
-      case 'objects':
-        // o -> s -> p
-        return [id2, id3, id1, graphId];
-      default:
-        throw new TypeError(`Invalid argument partKey was: ${partKey}`);
-    }
-  }
 
   *[Symbol.iterator](): Iterator<Quad> {
     const acc: number[][] = [];

@@ -1,3 +1,1 @@
-type ThirdPartIndex = Set<number>;
-
-export default ThirdPartIndex;
+export default class ThirdPartIndex extends Set<number> {}
