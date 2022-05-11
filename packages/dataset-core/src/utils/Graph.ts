@@ -32,6 +32,20 @@ export default class Graph extends Map {
     this.indexParts('objects', sId, oId, pId);
   }
 
+  deleteTerm(sId: number, pId: number, oId: number): void {
+    this.deleteParts('subjects', sId, pId, oId);
+    this.deleteParts('predicates', pId, oId, sId);
+    this.deleteParts('objects', sId, oId, pId);
+  }
+
+  hasTerm(sId: number, pId: number, oId: number): boolean {
+    return this.subjects.get(sId)?.get(pId)?.has(oId) ?? false;
+  }
+
+  isEmpty(): boolean {
+    return this.subjects.size === 0;
+  }
+
   private indexParts = (partKey: PartKey, ...parts: number[]): void => {
     const [id1, id2, id3] = parts;
     switch (true) {
@@ -47,5 +61,29 @@ export default class Graph extends Map {
       default:
         this[partKey].get(id1).get(id2).add(id3);
     }
+  };
+
+  private deleteParts = (partKey: PartKey, ...parts: number[]): void => {
+    const [id1, id2, id3] = parts;
+
+    if (!this.hasTerm(id1, id2, id3)) {
+      return;
+    }
+
+    const thirdIndex = this[partKey].get(id1).get(id2);
+    thirdIndex.delete(id3);
+
+    if (thirdIndex.size !== 0) {
+      return;
+    }
+
+    const secondIndex = this[partKey].get(id1);
+    secondIndex.delete(id2);
+
+    if (secondIndex.size !== 0) {
+      return;
+    }
+
+    this[partKey].delete(id1);
   };
 }

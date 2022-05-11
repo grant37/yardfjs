@@ -66,8 +66,11 @@ export default class TermIndex {
     return nextID;
   }
 
-  deleteTerm(term: Term): void {
-    const key = TermIndex.toRawValue(term);
+  deleteTerm(termOrId: Term | number): void {
+    const key =
+      typeof termOrId === 'number'
+        ? this.values.get(termOrId)
+        : TermIndex.toRawValue(termOrId);
 
     if (!this.ids.has(key)) {
       return;

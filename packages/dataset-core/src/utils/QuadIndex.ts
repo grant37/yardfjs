@@ -2,10 +2,10 @@ import { Quad, Term } from '@yardfjs/data-factory';
 
 import Graph from './Graph';
 import GraphIndex from './GraphIndex';
-import PartKey from './PartKey';
 import SecondPartIndex from './SecondPartIndex';
 import TermIndex from './TermIndex';
 import ThirdPartIndex from './ThirdPartIndex';
+import isValidId from './isValidId';
 
 /**
  * Internal representation of quads. Various indices are of the following form:
@@ -72,13 +72,21 @@ export default class QuadIndex {
     const predicateId = this.terms.getTermId(predicate);
     const objectId = this.terms.getTermId(object);
 
-    this.removeParts(graphId, 'subjects', subjectId);
-    this.removeParts(graphId, 'predicates', predicateId);
-    this.removeParts(graphId, 'objects', objectId);
+    if (!this.graphs.has(graphId)) {
+      return;
+    }
 
-    this.terms.deleteTerm(subject);
-    this.terms.deleteTerm(predicate);
-    this.terms.deleteTerm(object);
+    const targetGraph = this.graphs.get(graphId);
+    targetGraph.deleteTerm(subjectId, predicateId, objectId);
+
+    if (targetGraph.isEmpty()) {
+      this.graphs.delete(graphId);
+    }
+
+    this.removeTermIfUnused(subjectId);
+    this.removeTermIfUnused(predicateId);
+    this.removeTermIfUnused(objectId);
+    this.removeTermIfUnused(graphId);
 
     this.cachedSize = null;
   }
@@ -90,11 +98,8 @@ export default class QuadIndex {
     const objectId = this.terms.getTermId(object);
 
     return (
-      this.graphs
-        .get(graphId)
-        ?.subjects?.get(subjectId)
-        ?.get(predicateId)
-        ?.has(objectId) || false
+      this.graphs.get(graphId)?.hasTerm(subjectId, predicateId, objectId) ??
+      false
     );
   }
 
@@ -109,15 +114,15 @@ export default class QuadIndex {
     const pId = predicate && this.terms.getTermId(predicate);
     const oId = object && this.terms.getTermId(object);
 
-    if (this.isValidId(gId) && !this.graphs.has(gId)) {
+    if (isValidId(gId) && !this.graphs.has(gId)) {
       return new QuadIndex();
     }
 
-    const graphs = this.isValidId(gId) ? [this.graphs.get(gId)] : this.graphs;
+    const graphs = isValidId(gId) ? [this.graphs.get(gId)] : this.graphs;
 
-    const matchSubject = this.isValidId(sId);
-    const matchPredicate = this.isValidId(pId);
-    const matchObject = this.isValidId(oId);
+    const matchSubject = isValidId(sId);
+    const matchPredicate = isValidId(pId);
+    const matchObject = isValidId(oId);
 
     let terms: number[][];
 
@@ -164,30 +169,6 @@ export default class QuadIndex {
     return new QuadIndex(termIndex, graphIndex);
   }
 
-  private isValidId(id: number): boolean {
-    return typeof id === 'number';
-  }
-
-  private removeParts = (
-    graphId: number,
-    partKey: PartKey,
-    primaryId: number
-  ): void => {
-    const graph = this.graphs.get(graphId);
-
-    if (!graph) {
-      return;
-    }
-
-    const partIndex = graph[partKey];
-
-    partIndex.delete(primaryId);
-
-    if (partIndex.size === 0) {
-      this.graphs.delete(graphId);
-    }
-  };
-
   *[Symbol.iterator](): Iterator<Quad> {
     const acc: number[][] = [];
 
@@ -209,6 +190,27 @@ export default class QuadIndex {
         this.terms.getTerm(oId),
         this.terms.getTerm(gId)
       );
+    }
+  }
+
+  private removeTermIfUnused(termId: number): void {
+    if (this.graphs.has(termId)) {
+      return;
+    }
+
+    let shouldDelete = false;
+    this.graphs.forEach((graph) => {
+      if (
+        !graph.subjects.has(termId) &&
+        !graph.predicates.has(termId) &&
+        !graph.objects.has(termId)
+      ) {
+        shouldDelete = true;
+      }
+    });
+
+    if (shouldDelete) {
+      this.terms.deleteTerm(termId);
     }
   }
 }
