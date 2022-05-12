@@ -23,19 +23,19 @@ export default class Graph extends Map {
   }
 
   get objects(): PartIndex {
-    return this.get('subjects');
+    return this.get('objects');
   }
 
   addTerm(sId: number, pId: number, oId: number): void {
     this.indexParts('subjects', sId, pId, oId);
     this.indexParts('predicates', pId, oId, sId);
-    this.indexParts('objects', sId, oId, pId);
+    this.indexParts('objects', oId, sId, pId);
   }
 
   deleteTerm(sId: number, pId: number, oId: number): void {
     this.deleteParts('subjects', sId, pId, oId);
     this.deleteParts('predicates', pId, oId, sId);
-    this.deleteParts('objects', sId, oId, pId);
+    this.deleteParts('objects', oId, sId, pId);
   }
 
   hasTerm(sId: number, pId: number, oId: number): boolean {
