@@ -5,7 +5,7 @@ import GraphIndex from './GraphIndex';
 import SecondPartIndex from './SecondPartIndex';
 import TermIndex from './TermIndex';
 import ThirdPartIndex from './ThirdPartIndex';
-import isValidId from './isValidId';
+import isNullOrUndefined from './isNullOrUndefined';
 
 /**
  * Internal representation of quads. Various indices are of the following form:
@@ -109,23 +109,21 @@ export default class QuadIndex {
     object?: Term,
     graph?: Term
   ): QuadIndex {
-    const gId = graph && this.terms.getTermId(graph);
-    const sId = subject && this.terms.getTermId(subject);
-    const pId = predicate && this.terms.getTermId(predicate);
-    const oId = object && this.terms.getTermId(object);
+    const matchSubject = !isNullOrUndefined(subject);
+    const matchPredicate = !isNullOrUndefined(predicate);
+    const matchObject = !isNullOrUndefined(object);
+    const matchGraph = !isNullOrUndefined(graph);
 
-    const isGraphIdValid = isValidId(gId);
+    const sId = (matchSubject && this.terms.getTermId(subject)) || -1;
+    const pId = (matchPredicate && this.terms.getTermId(predicate)) || -1;
+    const oId = (matchObject && this.terms.getTermId(object)) || -1;
+    const gId = (matchGraph && this.terms.getTermId(graph)) || -1;
 
-    if (isGraphIdValid && !this.graphs.has(gId)) {
+    if (matchGraph && !this.graphs.has(gId)) {
       return new QuadIndex();
     }
 
-    const graphs = isGraphIdValid ? [this.graphs.get(gId)] : this.graphs;
-
-    const matchSubject = isValidId(sId);
-    const matchPredicate = isValidId(pId);
-    const matchObject = isValidId(oId);
-
+    const graphs = matchGraph ? [this.graphs.get(gId)] : this.graphs;
     const terms: number[][] = [];
 
     graphs.forEach((curr: Graph) => {

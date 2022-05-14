@@ -4,6 +4,8 @@ import { Literal, Term } from '@yardfjs/data-factory';
  * Stores a map of terms to term IDs and vice versa.
  */
 export default class TermIndex {
+  static MIN_ID = 1;
+
   /**
    * Converts a term to a value for internal representation. This is for indexing
    * purposes only, so it's not the canonical serialization of the term.
