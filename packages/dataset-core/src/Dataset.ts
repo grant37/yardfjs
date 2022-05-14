@@ -1,4 +1,4 @@
-import { Quad } from '@yardfjs/data-factory';
+import { Quad, Term } from '@yardfjs/data-factory';
 import { QuadIndex } from './utils';
 
 /**
@@ -25,8 +25,13 @@ export default class Dataset {
     return this.quadIndex.has(quad);
   }
 
-  match(quad: Quad): Dataset {
-    const quadIndex = this.quadIndex.match(quad);
+  match(
+    subject?: Term,
+    predicate?: Term,
+    object?: Term,
+    graph?: Term
+  ): Dataset {
+    const quadIndex = this.quadIndex.match(subject, predicate, object, graph);
     const dataSet = new Dataset();
     dataSet.quadIndex = quadIndex;
     return dataSet;

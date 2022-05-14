@@ -14,6 +14,6 @@ describe('DataFactory', () => {
     expect(node.value).toBe('b1');
     expect(node.termType).toBe('BlankNode');
     expect(node.equals(new DataFactory().blankNode('b1'))).toBe(true);
-    expect(node.equals(new DataFactory().blankNode())).toBe(false);
+    expect(node.equals(new DataFactory().blankNode('b2'))).toBe(false);
   });
 });

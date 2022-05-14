@@ -1,6 +1,7 @@
 import PartKey from './PartKey';
 import SecondPartIndex from './SecondPartIndex';
 import ThirdPartIndex from './ThirdPartIndex';
+import isValidId from './isValidId';
 
 export default class PartIndex extends Map<number, SecondPartIndex> {
   keyType: PartKey;
@@ -16,13 +17,10 @@ export default class PartIndex extends Map<number, SecondPartIndex> {
   /**
    * Return an array of quads as ids where target part id matches for a given graph.
    */
-  match(
-    matchId1: number,
-    matchId2?: number,
-    matchId3?: number
-  ): [number, number, number, number][] {
+  match(...args: number[]): [number, number, number, number][] {
     const result = [];
-    const termsToMatch = arguments.length;
+    const termsToMatch = args.filter(isValidId).length;
+    const [matchId1, matchId2, matchId3] = args;
 
     switch (termsToMatch) {
       case 1: {
@@ -34,7 +32,7 @@ export default class PartIndex extends Map<number, SecondPartIndex> {
 
         secondIndex.forEach((thirdIndex: ThirdPartIndex, id2: number) => {
           thirdIndex.forEach((id3: number) => {
-            const ids = this.makeIdArray(matchId1, id2, id3);
+            const ids = this.getOrderedIds(matchId1, id2, id3);
             result.push(ids);
           });
         });
@@ -49,7 +47,7 @@ export default class PartIndex extends Map<number, SecondPartIndex> {
         }
 
         thirdIndex.forEach((id3: number) => {
-          const ids = this.makeIdArray(matchId1, matchId2, id3);
+          const ids = this.getOrderedIds(matchId1, matchId2, id3);
           result.push(ids);
         });
 
@@ -60,7 +58,7 @@ export default class PartIndex extends Map<number, SecondPartIndex> {
           return result;
         }
 
-        const ids = this.makeIdArray(matchId1, matchId2, matchId3);
+        const ids = this.getOrderedIds(matchId1, matchId2, matchId3);
         result.push(ids);
 
         return result;
@@ -70,7 +68,7 @@ export default class PartIndex extends Map<number, SecondPartIndex> {
     }
   }
 
-  private makeIdArray = (
+  private getOrderedIds = (
     id1: number,
     id2: number,
     id3: number
