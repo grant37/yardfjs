@@ -114,17 +114,19 @@ export default class QuadIndex {
     const pId = predicate && this.terms.getTermId(predicate);
     const oId = object && this.terms.getTermId(object);
 
-    if (isValidId(gId) && !this.graphs.has(gId)) {
+    const isGraphIdValid = isValidId(gId);
+
+    if (isGraphIdValid && !this.graphs.has(gId)) {
       return new QuadIndex();
     }
 
-    const graphs = isValidId(gId) ? [this.graphs.get(gId)] : this.graphs;
+    const graphs = isGraphIdValid ? [this.graphs.get(gId)] : this.graphs;
 
     const matchSubject = isValidId(sId);
     const matchPredicate = isValidId(pId);
     const matchObject = isValidId(oId);
 
-    let terms: number[][] = [];
+    const terms: number[][] = [];
 
     graphs.forEach((curr: Graph) => {
       switch (true) {
@@ -150,7 +152,7 @@ export default class QuadIndex {
           terms.push(...curr.objects.match(oId, sId));
           break;
         case !matchSubject && !matchPredicate && !matchObject:
-          terms = [];
+          terms.push(...curr.subjects.match());
           break;
         default:
           throw new Error('Unable to attempt matching given parameters');

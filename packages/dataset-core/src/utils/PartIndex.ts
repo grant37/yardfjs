@@ -16,6 +16,7 @@ export default class PartIndex extends Map<number, SecondPartIndex> {
 
   /**
    * Return an array of quads as ids where target part id matches for a given graph.
+   * If all arguments are wildcards, return all quads.
    */
   match(...args: number[]): [number, number, number, number][] {
     const result = [];
@@ -23,6 +24,18 @@ export default class PartIndex extends Map<number, SecondPartIndex> {
     const [matchId1, matchId2, matchId3] = args;
 
     switch (termsToMatch) {
+      case 0: {
+        this.forEach((secondPartIndex: SecondPartIndex, id1) => {
+          secondPartIndex.forEach((thirdPartIndex: ThirdPartIndex, id2) => {
+            thirdPartIndex.forEach((id3: number) => {
+              const ids = this.getOrderedIds(id1, id2, id3);
+              result.push(ids);
+            });
+          });
+        });
+
+        return result;
+      }
       case 1: {
         const secondIndex = this.get(matchId1);
 

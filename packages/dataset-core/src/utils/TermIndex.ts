@@ -11,11 +11,11 @@ export default class TermIndex {
   static toRawValue = (term: Term): string => {
     switch (true) {
       case term.termType === 'Literal':
-        return `${term.value}${
+        return `${term.termType.substring(0, 1)}${term.value}${
           (term as Literal).language || (term as Literal).dataType.value
         }`;
       default:
-        return term.value;
+        return `${term.termType.substring(0, 1)}${term.value}`;
     }
   };
 
@@ -27,7 +27,7 @@ export default class TermIndex {
     data.forEach(([id, value, term]) => {
       this.ids.set(value, id);
       this.values.set(id, value);
-      this.terms.set(value, term);
+      this.terms.set(id, term);
     });
   }
 
@@ -39,7 +39,7 @@ export default class TermIndex {
 
     ids.forEach((id) => {
       const value = this.values.get(id);
-      const term = this.terms.get(value);
+      const term = this.terms.get(id);
       data.push([id, value, term]);
     });
 
@@ -61,7 +61,7 @@ export default class TermIndex {
 
     this.ids.set(key, nextID);
     this.values.set(nextID, key);
-    this.terms.set(key, term);
+    this.terms.set(nextID, term);
 
     return nextID;
   }
@@ -80,7 +80,7 @@ export default class TermIndex {
 
     this.ids.delete(key);
     this.values.delete(id);
-    this.terms.delete(key);
+    this.terms.delete(id);
   }
 
   getTermId(term: Term): number | undefined {
@@ -92,8 +92,7 @@ export default class TermIndex {
    * Get the term by ID.
    */
   getTerm(id: number): Term {
-    const value = this.values.get(id);
-    return this.terms.get(value);
+    return this.terms.get(id);
   }
 
   get size() {
@@ -111,7 +110,7 @@ export default class TermIndex {
   private values: Map<number, string> = new Map();
 
   /**
-   * Map of values to terms.
+   * Map of internal ids to terms.
    */
-  private terms: Map<string, Term> = new Map();
+  private terms: Map<number, Term> = new Map();
 }
