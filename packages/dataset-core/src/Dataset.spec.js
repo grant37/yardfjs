@@ -47,13 +47,14 @@ describe('add', () => {
   });
 
   it('should be able to find a quad that has been added in any graph', () => {
-    // given a dataset
-    // when a unique quad is added in any graph
+    // given a quad
     const quad = df.quad(
-      df.namedNode('s0'),
-      df.namedNode('p0'),
-      df.namedNode('o0')
+      df.namedNode('test'),
+      df.namedNode('add'),
+      df.namedNode('quad')
     );
+    // when the quad is added in any graph
+    ds.add(quad);
     // it should be possible to find that quad
     expect(ds.has(quad)).toBe(true);
   });
@@ -79,7 +80,8 @@ describe('match', () => {
     // when the quad is added to a dataset
     ds.add(q);
     // then the match method should return a dataset with that quad
-    expect(ds.match(df.namedNode('match')).has(q)).toBe(true);
+    const matchDs = ds.match(q.subject);
+    expect(matchDs.has(q)).toBe(true);
   });
 
   it('should match by predicate', () => {
@@ -92,7 +94,7 @@ describe('match', () => {
     // when a quad is added
     ds.add(q);
     // then the match method should return a dataset with that quad
-    expect(ds.match(null, df.namedNode('predicate')).has(q)).toBe(true);
+    expect(ds.match(null, q.predicate).has(q)).toBe(true);
   });
 
   it('should match by object', () => {

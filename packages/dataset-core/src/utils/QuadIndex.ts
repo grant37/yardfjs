@@ -124,30 +124,30 @@ export default class QuadIndex {
     const matchPredicate = isValidId(pId);
     const matchObject = isValidId(oId);
 
-    let terms: number[][];
+    let terms: number[][] = [];
 
     graphs.forEach((curr: Graph) => {
       switch (true) {
         case matchSubject && !matchPredicate && !matchObject:
-          terms = curr.subjects.match(sId);
+          terms.push(...curr.subjects.match(sId));
           break;
         case matchSubject && matchPredicate && !matchObject:
-          terms = curr.subjects.match(sId, pId);
+          terms.push(...curr.subjects.match(sId, pId));
           break;
         case matchSubject && matchPredicate && matchObject:
-          terms = curr.subjects.match(sId, pId, oId);
+          terms.push(...curr.subjects.match(sId, pId, oId));
           break;
         case matchPredicate && !matchSubject && !matchObject:
-          terms = curr.predicates.match(pId);
+          terms.push(...curr.predicates.match(pId));
           break;
         case matchPredicate && matchObject && !matchSubject:
-          terms = curr.predicates.match(pId, oId);
+          terms.push(...curr.predicates.match(pId, oId));
           break;
         case matchObject && !matchSubject && !matchPredicate:
-          terms = curr.objects.match(oId);
+          terms.push(...curr.objects.match(oId));
           break;
         case matchObject && matchSubject && !matchPredicate:
-          terms = curr.objects.match(oId, sId);
+          terms.push(...curr.objects.match(oId, sId));
           break;
         case !matchSubject && !matchPredicate && !matchObject:
           terms = [];
