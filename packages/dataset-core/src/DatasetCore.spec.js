@@ -1,39 +1,45 @@
-const Dataset = require('.').default;
+const DatasetCore = require('.').default;
 const DataFactory = require('@yardfjs/data-factory').default;
 
 let ds, df;
-const COUNT = 100;
 
+// generate a non-empty DatasetCore
 beforeAll(() => {
-  ds = new Dataset();
+  ds = new DatasetCore();
   df = new DataFactory();
 
-  for (let i = 0; i < COUNT; i++) {
-    ds.add(
-      df.quad(
-        df.namedNode(`s${i}`),
-        df.namedNode(`p${i}`),
-        df.namedNode(`o${i}`)
-      )
-    );
-  }
-
-  for (let i = 0; i < COUNT; i++) {
-    ds.add(
-      df.quad(
-        df.namedNode(`s${i}`),
-        df.namedNode(`p${i}`),
-        df.namedNode(`o${i}`),
-        df.namedNode(`g${i}`)
-      )
-    );
+  for (let i = 0; i < 10; i++) {
+    const graph =
+      i === 0
+        ? df.defaultGraph()
+        : df.namedNode(`http://example.org/graph${i}`);
+    for (let j = 0; j < 10; j++) {
+      const subject = df.namedNode(`http://example.org/subject${i}`);
+      for (let k = 0; k < 10; k++) {
+        const predicate = df.namedNode(`http://example.org/predicate${i}`);
+        for (let l = 0; l < 10; l++) {
+          let object;
+          switch (true) {
+            case k % 2 === 0:
+              object = df.namedNode(`http://example.org/object${i}`);
+              break;
+            case k % 3 === 0:
+              object = df.blankNode(`b${i}${j}${k}${l}`);
+              break;
+            default:
+              object = df.literal(`${i}${j}${k}${l}`);
+          }
+          ds.add(df.quad(subject, predicate, object, graph));
+        }
+      }
+    }
   }
 });
 
 describe('add', () => {
   it('should increment size for each added quad', () => {
-    // given a dataset
-    expect(ds.size).toBe(200);
+    // given a DatasetCore
+    const startingSize = ds.size;
     // when a unique quad is added in any graph
     ds.add(
       df.quad(
@@ -43,7 +49,7 @@ describe('add', () => {
       )
     );
     // then the size should be increased by one
-    expect(ds.size).toBe(201);
+    expect(ds.size).toBe(startingSize + 1);
   });
 
   it('should be able to find a quad that has been added in any graph', () => {
@@ -61,12 +67,12 @@ describe('add', () => {
 });
 
 describe('match', () => {
-  it('should return a new dataset', () => {
-    // given a dataset
+  it('should return a new DatasetCore', () => {
+    // given a DatasetCore
     // when the match method is called
     const matchDs = ds.match();
-    // then the result should be a new dataset
-    expect(matchDs instanceof Dataset).toBe(true);
+    // then the result should be a new DatasetCore
+    expect(matchDs instanceof DatasetCore).toBe(true);
     expect(matchDs).not.toBe(ds);
   });
 
@@ -77,9 +83,9 @@ describe('match', () => {
       df.namedNode('by'),
       df.namedNode('subject')
     );
-    // when the quad is added to a dataset
+    // when the quad is added to a DatasetCore
     ds.add(q);
-    // then the match method should return a dataset with that quad
+    // then the match method should return a DatasetCore with that quad
     const matchDs = ds.match(q.subject);
     expect(matchDs.has(q)).toBe(true);
   });
@@ -93,7 +99,7 @@ describe('match', () => {
     );
     // when a quad is added
     ds.add(q);
-    // then the match method should return a dataset with that quad
+    // then the match method should return a DatasetCore with that quad
     expect(ds.match(null, q.predicate).has(q)).toBe(true);
   });
 
@@ -106,7 +112,7 @@ describe('match', () => {
     );
     // when a quad is added
     ds.add(q);
-    // then the match method should return a dataset with that quad
+    // then the match method should return a DatasetCore with that quad
     expect(ds.match(null, null, df.namedNode('object')).has(q)).toBe(true);
   });
 });

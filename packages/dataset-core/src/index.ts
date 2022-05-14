@@ -1,3 +1,3 @@
-import Dataset from './Dataset';
+import DatasetCore from './DatasetCore';
 
-export default Dataset;
+export default DatasetCore;

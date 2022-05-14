@@ -2,9 +2,9 @@ import { Quad, Term } from '@yardfjs/data-factory';
 import { QuadIndex } from './utils';
 
 /**
- * Dataset.
+ * DatasetCore.
  */
-export default class Dataset {
+export default class DatasetCore {
   private quadIndex: QuadIndex;
 
   constructor() {
@@ -30,9 +30,9 @@ export default class Dataset {
     predicate?: Term,
     object?: Term,
     graph?: Term
-  ): Dataset {
+  ): DatasetCore {
     const quadIndex = this.quadIndex.match(subject, predicate, object, graph);
-    const dataSet = new Dataset();
+    const dataSet = new DatasetCore();
     dataSet.quadIndex = quadIndex;
     return dataSet;
   }
