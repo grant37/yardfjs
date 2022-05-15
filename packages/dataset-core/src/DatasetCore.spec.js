@@ -90,7 +90,6 @@ describe('delete', () => {
 
   it('should report not storing deleted quad', () => {
     // given a DatasetCore
-    const startingSize = ds.size;
     // when a unique quad is deleted in any graph
     const q = df.quad(
       df.namedNode(`${EXAMPLE_NAMESPACE}subject1`),
