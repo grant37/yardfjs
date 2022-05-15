@@ -9,11 +9,8 @@ const INITIAL_PREDICATE_COUNT = 3;
 const INITIAL_OBJECT_COUNT = 10;
 const EXAMPLE_NAMESPACE = 'http://example.org/';
 
-// generate a non-empty DatasetCore
-beforeEach(() => {
-  ds = new DatasetCore();
-  df = new DataFactory();
-
+const generateQuads = () => {
+  const result = [];
   for (let i = 0; i < INITIAL_GRAPH_COUNT; i++) {
     const graph =
       i === 0
@@ -35,11 +32,19 @@ beforeEach(() => {
             default:
               object = df.literal(`${i}${j}${k}${l}`);
           }
-          ds.add(df.quad(subject, predicate, object, graph));
+          result.push(df.quad(subject, predicate, object, graph));
         }
       }
     }
   }
+  return result;
+};
+
+// generate a non-empty DatasetCore
+beforeEach(() => {
+  ds = new DatasetCore();
+  df = new DataFactory();
+  generateQuads().forEach((q) => ds.add(q));
 });
 
 describe('add', () => {
@@ -409,4 +414,43 @@ describe('match', () => {
       expect(matchDs.size).toBe(0);
     }
   );
+});
+
+describe('iterable<Quad>', () => {
+  it('should iterate over expected number of quads', () => {
+    // given a dataset
+    // when iterating over the quads
+    let i = 0;
+    // eslint-disable-next-line no-restricted-syntax
+    for (_ of ds) {
+      i++;
+    }
+    // then the number of quads should be the expected size
+    expect(i).toBe(ds.size);
+  });
+
+  it('should find eqach quad in iteration in the dataset', () => {
+    // given a dataset
+    // when iterating over the quads
+    // then the number of quads should be the expected size
+    // eslint-disable-next-line no-restricted-syntax
+    for (const q of ds) {
+      expect(ds.has(q)).toBe(true);
+    }
+  });
+
+  it('should iterate over all quads added', () => {
+    // given a dataset
+    // when iterating over the quads
+    // then each quad should be one we expect
+    const quads = generateQuads();
+    const seen = new Set();
+    // eslint-disable-next-line no-restricted-syntax
+    for (const q of ds) {
+      const i = quads.findIndex((quad) => quad.equals(q));
+      expect(i).not.toBe(-1);
+      expect(seen.has(i)).toBe(false);
+      seen.add(i);
+    }
+  });
 });
