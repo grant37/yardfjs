@@ -26,10 +26,10 @@ beforeEach(() => {
         for (let l = 0; l < INITIAL_OBJECT_COUNT; l++) {
           let object;
           switch (true) {
-            case k % 2 === 0:
+            case l % 2 === 0:
               object = df.namedNode(`${EXAMPLE_NAMESPACE}object${l}`);
               break;
-            case k % 3 === 0:
+            case l % 3 === 0:
               object = df.blankNode(`b${i}${j}${k}${l}`);
               break;
             default:
@@ -40,34 +40,6 @@ beforeEach(() => {
       }
     }
   }
-});
-
-describe('has', () => {
-  it('should return false for a non-existing quad', () => {
-    // given a DatasetCore
-    // when a non-existing quad is checked
-    const q = df.quad(
-      df.namedNode('defintely'),
-      df.namedNode('not'),
-      df.namedNode('here')
-    );
-    // then the has method should return false
-    expect(ds.has(q)).toBe(false);
-  });
-
-  // same test as in add, but whatever
-  it('should return true for an existing quad', () => {
-    // given a DatasetCore
-    // when the quad is added to the dataset
-    const q = df.quad(
-      df.namedNode('match'),
-      df.namedNode('by'),
-      df.namedNode('object')
-    );
-    ds.add(q);
-    // then the has method should return true for that quad
-    expect(ds.has(q)).toBe(true);
-  });
 });
 
 describe('add', () => {
@@ -97,6 +69,65 @@ describe('add', () => {
     ds.add(quad);
     // it should be possible to find that quad
     expect(ds.has(quad)).toBe(true);
+  });
+});
+
+describe('delete', () => {
+  it('should decrement size for each deleted quad', () => {
+    // given a DatasetCore
+    const startingSize = ds.size;
+    // when a unique quad is deleted in any graph
+    ds.delete(
+      df.quad(
+        df.namedNode(`${EXAMPLE_NAMESPACE}subject1`),
+        df.namedNode(`${EXAMPLE_NAMESPACE}predicate1`),
+        df.namedNode(`${EXAMPLE_NAMESPACE}object2`)
+      )
+    );
+    // then the size should be decreased by one
+    expect(ds.size).toBe(startingSize - 1);
+  });
+
+  it('should report not storing deleted quad', () => {
+    // given a DatasetCore
+    const startingSize = ds.size;
+    // when a unique quad is deleted in any graph
+    const q = df.quad(
+      df.namedNode(`${EXAMPLE_NAMESPACE}subject1`),
+      df.namedNode(`${EXAMPLE_NAMESPACE}predicate1`),
+      df.namedNode(`${EXAMPLE_NAMESPACE}object2`)
+    );
+    ds.delete(q);
+    // then the size should be decreased by one
+    expect(ds.has(q)).toBe(false);
+  });
+});
+
+describe('has', () => {
+  it('should return false for a non-existing quad', () => {
+    // given a DatasetCore
+    // when a non-existing quad is checked
+    const q = df.quad(
+      df.namedNode('defintely'),
+      df.namedNode('not'),
+      df.namedNode('here')
+    );
+    // then the has method should return false
+    expect(ds.has(q)).toBe(false);
+  });
+
+  // same test as in add, but whatever
+  it('should return true for an existing quad', () => {
+    // given a DatasetCore
+    // when the quad is added to the dataset
+    const q = df.quad(
+      df.namedNode('match'),
+      df.namedNode('by'),
+      df.namedNode('object')
+    );
+    ds.add(q);
+    // then the has method should return true for that quad
+    expect(ds.has(q)).toBe(true);
   });
 });
 
@@ -321,5 +352,62 @@ describe('match', () => {
     );
   });
 
-  // still TODO: will treat terms that can't be found as wildcards :(
+  it('should return a new dataset of the same size if match is called with no args', () => {
+    // given a dataset
+    // when matching against a known term
+    const matchDs = ds.match();
+    // then the dataset should be the same as the original dataset
+    expect(matchDs.size).toBe(ds.size);
+  });
+
+  it('should return a new dataset of the same size if match is called with all wildcards', () => {
+    // given a dataset
+    // when matching against a known term
+    const matchDs = ds.match(null, undefined, null, undefined);
+    // then the dataset should be the same as the original dataset
+    expect(matchDs.size).toBe(ds.size);
+  });
+
+  df = new DataFactory();
+  // combination of non-matching arguments for match
+  const nonMatchingCases = [
+    [df.namedNode('no-match')],
+    [null, df.namedNode('no-match')],
+    [null, null, df.namedNode('no-match')],
+    [null, null, null, df.namedNode('no-match')],
+    [df.namedNode('no-match'), df.namedNode(`${EXAMPLE_NAMESPACE}predicate2`)],
+    [
+      df.namedNode('no-match'),
+      null,
+      df.namedNode(`${EXAMPLE_NAMESPACE}object2`),
+    ],
+    [
+      df.namedNode('no-match'),
+      null,
+      null,
+      df.namedNode(`${EXAMPLE_NAMESPACE}graph2`),
+    ],
+    [
+      null,
+      df.namedNode(`${EXAMPLE_NAMESPACE}predicate2`),
+      df.namedNode('no-match'),
+    ],
+    [
+      null,
+      df.namedNode(`${EXAMPLE_NAMESPACE}predicate2`),
+      null,
+      df.namedNode('no-match'),
+    ],
+  ];
+
+  test.each(nonMatchingCases)(
+    'should return an empty dataset when there is no match, args: %p, %p, %p, %p',
+    (...args) => {
+      // given a dataset
+      // when matching against a term known not to be in the dataset
+      const matchDs = ds.match(...args);
+      // then the result dataset should be empty
+      expect(matchDs.size).toBe(0);
+    }
+  );
 });
