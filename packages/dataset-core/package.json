@@ -1,0 +1,18 @@
+{
+  "name": "@yardfjs/dataset-core",
+  "version": "0.0.0",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@yardfjs/data-factory": "0.0.0"
+  },
+  "scripts": {
+    "build": "npm run clean && npm run compile && cross-env NODE_ENV=production INPUT_FILE=./src/index.ts rollup -c ../../rollup.config.mjs",
+    "clean": "rimraf -rf ./dist",
+    "compile": "tsc -p tsconfig.build.json -d --outDir ./dist"
+  }
+}
