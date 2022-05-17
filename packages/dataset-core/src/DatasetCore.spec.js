@@ -1,4 +1,4 @@
-const DatasetCore = require('.').default;
+const { DatasetCore } = require('.');
 const DataFactory = require('@yardfjs/data-factory').default;
 
 let ds, df;
@@ -452,5 +452,11 @@ describe('iterable<Quad>', () => {
       expect(seen.has(i)).toBe(false);
       seen.add(i);
     }
+  });
+
+  it('should be array-like', () => {
+    // given a dataset
+    // it should behave as an array-like object
+    expect(Array.from(ds).length).toEqual(ds.size);
   });
 });
