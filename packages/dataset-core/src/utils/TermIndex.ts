@@ -1,10 +1,12 @@
-import { Literal, Term } from '@yardfjs/data-factory';
+import DataFactory, { Literal, Term } from '@yardfjs/data-factory';
 
 /**
  * Stores a map of terms to term IDs and vice versa.
  */
 export default class TermIndex {
   static MIN_ID = 1;
+
+  private dataFactory: DataFactory = new DataFactory();
 
   /**
    * Converts a term to a value for internal representation. This is for indexing
@@ -29,7 +31,7 @@ export default class TermIndex {
     data.forEach(([id, value, term]) => {
       this.ids.set(value, id);
       this.values.set(id, value);
-      this.terms.set(id, term);
+      this.terms.set(id, this.dataFactory.fromTerm(term));
     });
   }
 
@@ -63,7 +65,7 @@ export default class TermIndex {
 
     this.ids.set(key, nextID);
     this.values.set(nextID, key);
-    this.terms.set(nextID, term);
+    this.terms.set(nextID, this.dataFactory.fromTerm(term));
 
     return nextID;
   }
