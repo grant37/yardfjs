@@ -8,6 +8,7 @@
     "dist"
   ],
   "dependencies": {
+    "@aws-crypto/sha256-universal": "^2.0.1",
     "@yardfjs/data-factory": "0.0.0",
     "@yardfjs/dataset-core": "0.0.0"
   },

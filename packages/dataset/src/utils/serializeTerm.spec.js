@@ -1,5 +1,4 @@
 const serializeTerm = require('./serializeTerm').default;
-// test serializeTerm
 describe('serializeTerm', () => {
   it('should serialize an IRI', () => {
     const term = {

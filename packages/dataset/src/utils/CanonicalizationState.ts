@@ -1,16 +1,10 @@
 import BlankNodesToQuadsMap from './BlankNodesToQuadsMap';
 import IdentifierIssuer from './IdentifierIssuer';
 
-export default class CanonicalizationState {
-  /**
-   * Maps blank node identifier to the quads in which it appears.
-   */
-  blankNodesToQuadsMap: BlankNodesToQuadsMap = new BlankNodesToQuadsMap();
+export default interface CanonicalizationState {
+  canonicalIssuer: IdentifierIssuer;
 
-  /**
-   * Maps a has to a list of blank node identifiers.
-   */
-  hashToBlankNodesMap: Map<string, string[]> = new Map();
+  blankNodesToQuadsMap: BlankNodesToQuadsMap;
 
-  canonicalIssuer: IdentifierIssuer = new IdentifierIssuer();
+  hashToBlankNodesMap: Map<string, string[]>;
 }
