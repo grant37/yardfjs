@@ -17,5 +17,7 @@ module.exports = {
     'class-methods-use-this': 'off',
     'import/no-extraneous-dependencies': ['error', { devDependencies: true }],
     'no-await-in-loop': 'off',
+    'no-restricted-syntax': 'off',
+    'no-continue': 'off',
   },
 };
