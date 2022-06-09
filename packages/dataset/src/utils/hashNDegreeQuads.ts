@@ -7,15 +7,25 @@ import IdentifierIssuer from './IdentifierIssuer';
 import hashFirstDegreeQuads from './hashFirstDegreeQuads';
 import { Quad, Term } from '@yardfjs/data-factory';
 
-const hashRelatedBlankNodes = async (
-  state: CanonicalizationState,
-  bNodeId: string,
-  term: Term,
-  quad: Quad,
-  issuer: IdentifierIssuer,
-  position: string,
-  hashToRelatedBlankNodesMap: Map<string, string[]>
-): Promise<void> => {
+type HashRelatedBlankNodeArgs = {
+  state: CanonicalizationState;
+  bNodeId: string;
+  term: Term;
+  quad: Quad;
+  issuer: IdentifierIssuer;
+  position: string;
+  hashToRelatedBlankNodesMap: Map<string, string[]>;
+};
+
+const hashRelatedBlankNodes = async ({
+  state,
+  bNodeId,
+  term,
+  quad,
+  issuer,
+  position,
+  hashToRelatedBlankNodesMap,
+}: HashRelatedBlankNodeArgs): Promise<void> => {
   if (!isBlankNode(term)) {
     return;
   }
@@ -63,15 +73,15 @@ const hashNDegreeQuads = async (
     const { subject, object, graph } = quad;
 
     const resultPromises = [subject, object, graph].map((term, i) =>
-      hashRelatedBlankNodes(
+      hashRelatedBlankNodes({
         state,
         bNodeId,
         term,
         quad,
         issuer,
-        (i === 0 && 's') || (i === 1 && 'o') || 'g',
-        hashToRelatedBlankNodesMap
-      )
+        position: (i === 0 && 's') || (i === 1 && 'o') || 'g',
+        hashToRelatedBlankNodesMap,
+      })
     );
 
     await Promise.all(resultPromises);
@@ -79,11 +89,14 @@ const hashNDegreeQuads = async (
 
   let dataToHash = '';
 
-  hashToRelatedBlankNodesMap.forEach((relatedIds, hash) => {
-    dataToHash += hash;
-    let chosenPath = '';
-    let chosenIssuer: IdentifierIssuer;
-  });
+  Array.from(hashToRelatedBlankNodesMap.keys())
+    .sort()
+    .forEach((hash) => {
+      const blankNodeIds = hashToRelatedBlankNodesMap.get(hash);
+      dataToHash += hash;
+      let chosenPath = '';
+      let chosenIssuer: IdentifierIssuer;
+    });
 
   return '';
 };
