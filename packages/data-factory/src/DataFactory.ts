@@ -65,10 +65,10 @@ export default class DataFactory {
 
   fromQuad(original: Quad): Quad {
     return this.quad(
-      original.subject,
-      original.predicate,
-      original.object,
-      original.graph
+      this.fromTerm(original.subject),
+      this.fromTerm(original.predicate),
+      this.fromTerm(original.object),
+      this.fromTerm(original.graph)
     );
   }
 }

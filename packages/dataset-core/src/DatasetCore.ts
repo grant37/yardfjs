@@ -5,7 +5,7 @@ import { QuadIndex } from './utils';
  * DatasetCore.
  */
 export default class DatasetCore {
-  private quadIndex: QuadIndex;
+  protected quadIndex: QuadIndex;
 
   constructor() {
     this.quadIndex = new QuadIndex();
@@ -21,6 +21,9 @@ export default class DatasetCore {
     return this;
   }
 
+  /**
+   * Note: Blank nodes will be matched by provided identifier rather than normalized.
+   */
   has(quad: Quad): boolean {
     return this.quadIndex.has(quad);
   }

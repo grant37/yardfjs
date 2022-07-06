@@ -1,0 +1,24 @@
+{
+  "name": "@yardfjs/dataset",
+  "version": "0.0.0",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@aws-crypto/sha256-universal": "^2.0.1",
+    "@yardfjs/data-factory": "0.0.0",
+    "@yardfjs/dataset-core": "0.0.0"
+  },
+  "scripts": {
+    "build": "npm run clean && npm run compile && cross-env NODE_ENV=production INPUT_FILE=./src/index.ts rollup -c ../../rollup.config.mjs",
+    "clean": "rimraf -rf ./dist",
+    "compile": "tsc -p tsconfig.build.json -d --outDir ./dist"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^7.2.0",
+    "faker": "^6.6.6"
+  }
+}
