@@ -1,4 +1,5 @@
 import { Quad, Term } from '@yardfjs/data-factory';
+import Canonical from './utils/Canonical';
 import { DatasetCore } from '@yardfjs/dataset-core';
 
 export default class Dataset extends DatasetCore {
@@ -36,15 +37,21 @@ export default class Dataset extends DatasetCore {
     return this;
   }
 
-  // https://json-ld.github.io/rdf-dataset-canonicalization/spec/#canonicalization
-  contains(): boolean {
-    // stub
-    return false;
+  async contains(dataset: Dataset): Promise<boolean> {
+    const [providedAsCanonical, thisAsCanonical] = await Promise.all([
+      new Canonical(dataset).run(),
+      new Canonical(this).run(),
+    ]);
+
+    return providedAsCanonical.every((quad) => thisAsCanonical.has(quad));
   }
 
-  equals(): boolean {
-    // stub
-    return false;
+  async equals(dataset: Dataset): Promise<boolean> {
+    if (dataset.size !== this.size) {
+      return false;
+    }
+
+    return this.contains(dataset);
   }
 
   union(other: Dataset | DatasetCore): Dataset {

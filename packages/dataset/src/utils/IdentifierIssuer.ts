@@ -1,6 +1,9 @@
 export default class IdentifierIssuer {
   private identifierCounter: number = 1;
 
+  /**
+   * A map of existing identifiers to issued identifiers.
+   */
   issuedIdentifiers: Map<string, string>;
 
   identifierPrefix: string = '_:c14n';
@@ -12,11 +15,17 @@ export default class IdentifierIssuer {
    */
   constructor(
     issuedIdentifiers: Map<string, string>,
-    identifierPrefix?: string
+    identifierPrefix?: string,
+    identifierCounter?: number
   ) {
     this.issuedIdentifiers = issuedIdentifiers;
+
     if (identifierPrefix) {
       this.identifierPrefix = identifierPrefix;
+    }
+
+    if (identifierCounter != null) {
+      this.identifierCounter = identifierCounter;
     }
   }
 
@@ -39,4 +48,15 @@ export default class IdentifierIssuer {
   hasId(existingIdentifier: string): boolean {
     return this.issuedIdentifiers.has(existingIdentifier);
   }
+
+  /**
+   * Make a new issuer that matches the state of this instance at this point
+   * in time.
+   */
+  copy = () =>
+    new IdentifierIssuer(
+      new Map(this.issuedIdentifiers),
+      this.identifierPrefix,
+      this.identifierCounter
+    );
 }

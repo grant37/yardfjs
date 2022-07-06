@@ -1,31 +1,70 @@
+import DataFactory, { Term } from '@yardfjs/data-factory';
 import BlankNodesToQuadsMap from './BlankNodesToQuadsMap';
 import CanonicalizationState from './CanonicalizationState';
 import Dataset from '../Dataset';
 import IdentifierIssuer from './IdentifierIssuer';
 import hashFirstDegreeQuads from './hashFirstDegreeQuads';
 import hashNDegreeQuads from './hashNdegreeQuads';
+import { isBlankNode } from './termType';
 
 export default class Canonical {
   private state: CanonicalizationState;
 
   private sortedHashes?: string[];
 
-  constructor(dataset: Dataset) {
-    const idsMap = new Map<string, string>();
-    this.state.canonicalIssuer = new IdentifierIssuer(idsMap);
+  private providedDataset: Dataset;
 
-    this.state.hashToBlankNodesMap = new Map();
-    this.state.blankNodesToQuadsMap = new BlankNodesToQuadsMap();
+  private factory: DataFactory = new DataFactory();
+
+  constructor(dataset: Dataset) {
+    this.providedDataset = dataset;
+    const idsMap = new Map<string, string>();
+    this.state = {
+      canonicalIssuer: new IdentifierIssuer(idsMap),
+      hashToBlankNodesMap: new Map(),
+      blankNodesToQuadsMap: new BlankNodesToQuadsMap(),
+    };
 
     dataset.forEach((quad) => {
       this.state.blankNodesToQuadsMap.add(quad);
     });
   }
 
-  async run() {
+  async run(): Promise<Dataset> {
+    if (this.state.blankNodesToQuadsMap.size === 0) {
+      return this.providedDataset;
+    }
+
     await this.runForFirstDegreeQuads();
     await this.runForNDegreeQuads();
+
+    return this.providedDataset.reduce((acc, quad) => {
+      const subject = this.getCanonicalTerm(quad.subject);
+      const object = this.getCanonicalTerm(quad.object);
+      const graph = this.getCanonicalTerm(quad.graph);
+
+      const canonicalQuad = this.factory.quad(
+        subject,
+        this.factory.fromTerm(quad.predicate),
+        object,
+        graph
+      );
+
+      return acc.add(canonicalQuad);
+    }, new Dataset());
   }
+
+  private getCanonicalTerm = (term: Term): Term => {
+    if (!isBlankNode(term)) {
+      return this.factory.fromTerm(term);
+    }
+
+    const canonicalValue = this.state.canonicalIssuer.issuedIdentifiers.get(
+      term.value
+    );
+
+    return this.factory.blankNode(canonicalValue);
+  };
 
   // Note this avoids the loop given on purpose the explanation here:
   // https://json-ld.github.io/rdf-dataset-canonicalization/spec/#hash-first-degree-quads
@@ -72,7 +111,7 @@ export default class Canonical {
       Array.from(this.state.hashToBlankNodesMap.keys()).sort();
 
     for (const hash of hashes) {
-      const hashPathList = [];
+      const hashPathList: [IdentifierIssuer, string][] = [];
       const identifiers = this.state.hashToBlankNodesMap.get(hash);
 
       for (const id of identifiers) {
@@ -81,10 +120,19 @@ export default class Canonical {
         }
 
         const issuedIds = new Map<string, string>();
-        const tmpIssuer = new IdentifierIssuer(issuedIds, '_:b');
-        const tmpId = tmpIssuer.issue(id);
+        const tempIssuer = new IdentifierIssuer(issuedIds, '_:b');
+        const tempId = tempIssuer.issue(id);
 
-        await hashNDegreeQuads(this.state, tmpId, tmpIssuer);
+        const result = await hashNDegreeQuads(this.state, tempId, tempIssuer);
+        hashPathList.push(result);
+      }
+
+      hashPathList.sort((a, b) => a[1].localeCompare(b[1]));
+
+      for (const [issuer] of hashPathList) {
+        for (const id of issuer.issuedIdentifiers.keys()) {
+          this.state.canonicalIssuer.issue(id);
+        }
       }
     }
   }

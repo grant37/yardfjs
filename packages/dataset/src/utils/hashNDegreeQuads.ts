@@ -1,11 +1,11 @@
-import { isBlankNode, isDefaultGraph } from './termType';
-import CanonicalizationState from './CanonicalizationState';
-import { Sha256 } from '@aws-crypto/sha256-universal';
-import serializeTerm from './serializeTerm';
-import BlankNodesToQuadsMap from './BlankNodesToQuadsMap';
-import IdentifierIssuer from './IdentifierIssuer';
-import hashFirstDegreeQuads from './hashFirstDegreeQuads';
 import { Quad, Term } from '@yardfjs/data-factory';
+import CanonicalizationState from './CanonicalizationState';
+import IdentifierIssuer from './IdentifierIssuer';
+import { Sha256 } from '@aws-crypto/sha256-universal';
+import generate from './generateListPermutations';
+import hashFirstDegreeQuads from './hashFirstDegreeQuads';
+import { isBlankNode } from './termType';
+import serializeTerm from './serializeTerm';
 
 type HashRelatedBlankNodeArgs = {
   state: CanonicalizationState;
@@ -52,7 +52,7 @@ const hashRelatedBlankNodes = async ({
   const hash = new Sha256();
   hash.update(input);
 
-  const result = (await hash.digest()).join();
+  const result = (await hash.digest()).join('');
 
   if (!hashToRelatedBlankNodesMap.has(result)) {
     hashToRelatedBlankNodesMap.set(result, []);
@@ -65,40 +65,89 @@ const hashNDegreeQuads = async (
   state: CanonicalizationState,
   bNodeId: string,
   issuer: IdentifierIssuer
-): Promise<string> => {
+): Promise<[IdentifierIssuer, string]> => {
+  let currentIssuer = issuer;
   const hashToRelatedBlankNodesMap = new Map<string, string[]>();
   const quads = state.blankNodesToQuadsMap.get(bNodeId);
+  const toHash = (quad: Quad) => (term: Term, i: number) =>
+    hashRelatedBlankNodes({
+      state,
+      bNodeId,
+      term,
+      quad,
+      issuer: currentIssuer,
+      position: (i === 0 && 's') || (i === 1 && 'o') || 'g',
+      hashToRelatedBlankNodesMap,
+    });
 
   for (const quad of quads) {
     const { subject, object, graph } = quad;
-
-    const resultPromises = [subject, object, graph].map((term, i) =>
-      hashRelatedBlankNodes({
-        state,
-        bNodeId,
-        term,
-        quad,
-        issuer,
-        position: (i === 0 && 's') || (i === 1 && 'o') || 'g',
-        hashToRelatedBlankNodesMap,
-      })
-    );
-
-    await Promise.all(resultPromises);
+    await Promise.all([subject, object, graph].map(toHash(quad)));
   }
 
   let dataToHash = '';
 
-  Array.from(hashToRelatedBlankNodesMap.keys())
-    .sort()
-    .forEach((hash) => {
-      const blankNodeIds = hashToRelatedBlankNodesMap.get(hash);
-      dataToHash += hash;
-      let chosenPath = '';
-      let chosenIssuer: IdentifierIssuer;
-    });
+  const hashes = Array.from(hashToRelatedBlankNodesMap.keys()).sort();
+  const shouldSkipToNext = (path: string, chosenPath: string) =>
+    chosenPath.length > 0 &&
+    path.length >= chosenPath.length &&
+    path.localeCompare(chosenPath) > 0;
 
-  return '';
+  for (const hash of hashes) {
+    const blankNodeIds = hashToRelatedBlankNodesMap.get(hash);
+    dataToHash += hash;
+    let chosenPath = '';
+    let chosenIssuer: IdentifierIssuer;
+    const perms = generate<string>(blankNodeIds.length, blankNodeIds);
+
+    for (const list of perms) {
+      const issuerCopy = currentIssuer.copy();
+      const recursionList: string[] = [];
+      let path = '';
+      list.forEach((related) => {
+        if (issuerCopy.hasId(related)) {
+          path += related;
+          return;
+        }
+
+        recursionList.push(related);
+        path += issuerCopy.issue(related);
+      });
+
+      if (shouldSkipToNext(path, chosenPath)) {
+        continue;
+      }
+
+      let skip = false;
+      for (const related of recursionList) {
+        const result = await hashNDegreeQuads(state, related, issuerCopy);
+        path += issuerCopy.issue(related);
+        path += `<${result}>`;
+
+        if (shouldSkipToNext(path, chosenPath)) {
+          skip = true;
+          break;
+        }
+      }
+
+      if (skip) {
+        continue;
+      }
+
+      if (chosenPath.length === 0 || path.localeCompare(chosenPath) < 0) {
+        chosenPath = path;
+        chosenIssuer = issuerCopy;
+      }
+    }
+
+    dataToHash += chosenPath;
+    currentIssuer = chosenIssuer;
+  }
+
+  const finalHash = new Sha256();
+  finalHash.update(dataToHash);
+
+  return [currentIssuer, (await finalHash.digest()).join('')];
 };
 
 export default hashNDegreeQuads;
